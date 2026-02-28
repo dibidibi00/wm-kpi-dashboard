@@ -6,138 +6,149 @@
     <title>WM혁신팀 KPI 인사이트</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: 'Pretendard', sans-serif; margin: 0; background-color: #f4f7f6; color: #333; }
-        .header { background-color: #002d72; color: white; padding: 20px; text-align: center; }
+        body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; margin: 0; background-color: #f4f7f6; color: #333; }
+        .header { background-color: #002d72; color: white; padding: 25px 20px; text-align: center; }
         .container { max-width: 600px; margin: 0 auto; padding: 20px; }
         
         /* 직원 리스트 카드 */
-        .staff-card { background: white; padding: 15px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); cursor: pointer; transition: 0.3s; display: flex; justify-content: space-between; align-items: center; }
-        .staff-card:hover { background-color: #eef2f8; }
-        .staff-info h3 { margin: 0; font-size: 16px; }
-        .staff-info p { margin: 4px 0 0; font-size: 12px; color: #666; }
-        .current-score { font-weight: bold; color: #f26522; font-size: 18px; }
-
-        /* 모달 (상세 보기 팝업) */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
-        .modal-content { background: white; width: 90%; max-width: 500px; padding: 20px; border-radius: 12px; position: relative; }
-        .close-btn { position: absolute; top: 15px; right: 15px; cursor: pointer; font-size: 20px; font-weight: bold; }
+        .staff-card { background: white; padding: 15px 20px; margin-bottom: 12px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); cursor: pointer; transition: 0.2s; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid transparent; }
+        .staff-card:hover { transform: translateY(-2px); }
+        .staff-card.high { border-left-color: #f26522; } /* 상위권 포인트 컬러 */
+        .staff-card.low { border-left-color: #999; }
         
-        canvas { margin-top: 20px; }
+        .staff-info h3 { margin: 0; font-size: 17px; font-weight: 700; }
+        .staff-info p { margin: 5px 0 0; font-size: 13px; color: #666; }
+        .current-score { font-weight: 800; color: #002d72; font-size: 20px; }
+
+        /* 모달 (상세 보기) */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-content { background: white; width: 85%; max-width: 400px; padding: 25px; border-radius: 16px; position: relative; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+        .close-btn { position: absolute; top: 15px; right: 20px; cursor: pointer; font-size: 24px; color: #999; }
+        
+        /* 로딩/에러 메시지 */
+        #error-msg { text-align: center; color: red; display: none; margin-top: 20px; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h3>WM혁신팀 성과 분석</h3>
-        <span style="font-size:12px; opacity:0.8;">분기별 추이 및 상세 현황</span>
+        <h3 style="margin:0; font-size:20px;">WM혁신팀 성과 분석</h3>
+        <p style="margin:5px 0 0; font-size:13px; opacity:0.8;">실시간 KPI 모니터링 시스템</p>
     </div>
 
-    <div class="container" id="staff-list">
-        </div>
+    <div class="container">
+        <div id="staff-list">
+            </div>
+        <div id="error-msg">데이터를 불러오는 중입니다...</div>
+    </div>
 
-    <div id="detail-modal" class="modal">
+    <div id="detail-modal" class="modal" onclick="if(event.target == this) closeModal()">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal()">&times;</span>
-            <h2 id="modal-name" style="margin-top:0;">직원 이름</h2>
-            <p id="modal-role" style="color:#666; font-size:13px;">직책</p>
-            <hr style="border:0.5px solid #eee;">
-            <canvas id="kpiChart"></canvas>
-            <div style="margin-top:15px; font-size:12px; color:#888; text-align:center;">
-                * 해당 데이터는 WM디지털PB 및 관리자 활동을 합산한 수치입니다.
+            <h2 id="modal-name" style="margin:0 0 5px 0;">-</h2>
+            <p id="modal-role" style="color:#666; font-size:14px; margin:0;">-</p>
+            <div style="margin-top:20px; height:250px;">
+                <canvas id="kpiChart"></canvas>
             </div>
+            <p style="text-align:center; font-size:12px; color:#999; margin-top:15px;">
+                * 터치하면 팝업이 닫힙니다.
+            </p>
         </div>
     </div>
 
     <script>
-        // ==========================================
-        // [DB 영역] 여기에 분기별 데이터를 계속 추가하면 됩니다.
-        // ==========================================
-        const database = [
-            {
-                id: 1,
-                name: "김미래",
-                role: "선임PB (관리자)",
-                current_kpi: "125%",
-                history: // 1Q, 2Q, 3Q, 4Q 데이터
-            },
-            {
-                id: 2,
-                name: "이증권",
-                role: "WM디지털PB",
-                current_kpi: "95%",
-                history: // 우상향 중
-            },
-            {
-                id: 3,
-                name: "박혁신",
-                role: "수석PB",
-                current_kpi: "105%",
-                history: // 정체 중
-            }
-        ];
-        // ==========================================
-
-        const listContainer = document.getElementById('staff-list');
-        const modal = document.getElementById('detail-modal');
-        let myChart = null;
-
-        // 1. 리스트 생성 함수
-        function renderList() {
-            database.forEach(staff => {
-                const card = document.createElement('div');
-                card.className = 'staff-card';
-                card.innerHTML = `
-                    <div class="staff-info">
-                        <h3>${staff.name}</h3>
-                        <p>${staff.role}</p>
-                    </div>
-                    <div class="current-score">${staff.current_kpi}</div>
-                `;
-                card.onclick = () => showDetail(staff);
-                listContainer.appendChild(card);
-            });
-        }
-
-        // 2. 상세 보기 및 차트 그리기 함수
-        function showDetail(staff) {
-            document.getElementById('modal-name').innerText = staff.name;
-            document.getElementById('modal-role').innerText = staff.role;
-            modal.style.display = 'flex';
-
-            const ctx = document.getElementById('kpiChart').getContext('2d');
+        // 안전장치: 화면이 다 로딩된 후 실행
+        document.addEventListener('DOMContentLoaded', function() {
             
-            // 기존 차트가 있으면 삭제 (겹침 방지)
-            if (myChart) myChart.destroy();
+            // 1. 데이터 베이스 (수정 영역)
+            const database = [
+                { id: 1, name: "김미래", role: "선임PB (관리자)", kpi: "125%", history:, status: "high" },
+                { id: 2, name: "이증권", role: "WM디지털PB", kpi: "95%", history:, status: "low" },
+                { id: 3, name: "박혁신", role: "수석PB", kpi: "105%", history:, status: "high" },
+                { id: 4, name: "최자산", role: "WM디지털PB", kpi: "88%", history:, status: "low" }
+            ];
 
-            // 새 차트 생성
-            myChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['1Q', '2Q', '3Q', '4Q'], // X축 라벨
-                    datasets: [{
-                        label: 'KPI 달성률 (%)',
-                        data: staff.history,
-                        borderColor: '#002d72',
-                        backgroundColor: 'rgba(0, 45, 114, 0.1)',
-                        borderWidth: 2,
-                        tension: 0.3, // 곡선
-                        fill: true
-                    }]
-                },
-                options: {
-                    scales: {
-                        y: { beginAtZero: true, max: 150 }
-                    }
+            const listContainer = document.getElementById('staff-list');
+            const modal = document.getElementById('detail-modal');
+            let myChart = null;
+
+            // 2. 리스트 렌더링 함수
+            function renderList() {
+                if (!listContainer) {
+                    alert("시스템 오류: 화면 요소를 찾을 수 없습니다.");
+                    return;
                 }
-            });
-        }
 
-        function closeModal() {
-            modal.style.display = 'none';
-        }
+                listContainer.innerHTML = ''; // 초기화
 
-        // 실행
-        renderList();
+                database.forEach(function(staff) {
+                    const card = document.createElement('div');
+                    card.className = `staff-card ${staff.status}`; // 상태별 색상 적용
+                    card.innerHTML = `
+                        <div class="staff-info">
+                            <h3>${staff.name}</h3>
+                            <p>${staff.role}</p>
+                        </div>
+                        <div class="current-score">${staff.kpi}</div>
+                    `;
+                    // 클릭 이벤트 연결
+                    card.addEventListener('click', function() {
+                        showDetail(staff);
+                    });
+                    listContainer.appendChild(card);
+                });
+            }
+
+            // 3. 차트 및 상세 보기 함수
+            window.showDetail = function(staff) {
+                // 모달 텍스트 채우기
+                document.getElementById('modal-name').innerText = staff.name;
+                document.getElementById('modal-role').innerText = staff.role;
+                modal.style.display = 'flex';
+
+                // 차트 그리기 (Chart.js 로딩 체크)
+                if (typeof Chart === 'undefined') {
+                    alert("보안망 이슈로 차트 라이브러리를 불러오지 못했습니다.\n(리스트 확인은 가능합니다)");
+                    return;
+                }
+
+                const ctx = document.getElementById('kpiChart').getContext('2d');
+                
+                if (myChart) {
+                    myChart.destroy(); // 기존 차트 삭제
+                }
+
+                myChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['1Q', '2Q', '3Q', '4Q'],
+                        datasets: [{
+                            label: '성과 달성률(%)',
+                            data: staff.history,
+                            borderColor: '#f26522',
+                            backgroundColor: 'rgba(242, 101, 34, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: false, min: 50, max: 150 } }
+                    }
+                });
+            };
+
+            // 4. 모달 닫기 함수
+            window.closeModal = function() {
+                modal.style.display = 'none';
+            };
+
+            // 실행
+            renderList();
+        });
     </script>
 </body>
 </html>
