@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WM혁신팀 KPI 현황</title>
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; }
+        .header { background-color: #002d72; color: white; padding: 20px; text-align: center; } /* 미래에셋 블루 톤 */
+        .container { padding: 20px; max-width: 600px; margin: 0 auto; }
+        .card { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+        .info { flex-grow: 1; }
+        .name { font-size: 18px; font-weight: bold; color: #333; }
+        .role { font-size: 12px; color: #888; margin-top: 4px; }
+        .score { font-size: 20px; font-weight: bold; color: #f26522; } /* 미래에셋 오렌지 톤 */
+        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; color: white; margin-left: 10px; }
+        .high { background-color: #28a745; } /* 우수 */
+        .low { background-color: #dc3545; } /* 저조 */
+        .update-time { text-align: center; color: #666; font-size: 12px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2 style="margin:0;">지점 KPI 모니터링</h2>
+        <p style="margin:5px 0 0 0; font-size:14px;">WM혁신팀 관리자 제도 현황</p>
+    </div>
+
+    <div class="container" id="kpi-list">
+        </div>
+
+    <div class="update-time">
+        최종 업데이트: 2024.05.21 09:00
+    </div>
+
+    <script>
+        // [수정 포인트] 여기에 직원 데이터를 입력하세요.
+        const staffData = [
+            { name: "김미래", role: "선임PB (관리자)", kpi: "120%", status: "high" },
+            { name: "이증권", role: "WM디지털PB", kpi: "95%", status: "low" },
+            { name: "박혁신", role: "수석PB", kpi: "105%", status: "high" },
+            { name: "최자산", role: "WM디지털PB", kpi: "88%", status: "low" }
+        ];
+
+        const container = document.getElementById('kpi-list');
+
+        staffData.forEach(staff => {
+            let badgeClass = staff.status === 'high' ? 'high' : 'low';
+            let badgeText = staff.status === 'high' ? '달성' : '미달';
+            
+            const html = `
+                <div class="card">
+                    <div class="info">
+                        <div class="name">${staff.name} <span class="status-badge ${badgeClass}">${badgeText}</span></div>
+                        <div class="role">${staff.role}</div>
+                    </div>
+                    <div class="score">${staff.kpi}</div>
+                </div>
+            `;
+            container.innerHTML += html;
+        });
+    </script>
+
+</body>
+</html>
