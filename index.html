@@ -3,97 +3,121 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WM혁신팀 KPI 대시보드3</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>WM혁신팀 KPI 현황</title>
     <style>
-        /* 기본 스타일 설정 */
-        body { font-family: sans-serif; margin: 0; background-color: #f4f7f6; color: #333; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; background-color: #f0f2f5; }
         .header { background-color: #002d72; color: white; padding: 20px; text-align: center; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .container { padding: 20px; max-width: 600px; margin: 0 auto; }
         
-        /* 카드 스타일 */
-        .card { background: white; padding: 15px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
-        .card:active { background-color: #eee; } /* 클릭 효과 */
-        
-        .info h3 { margin: 0; font-size: 16px; }
-        .info p { margin: 5px 0 0; font-size: 12px; color: #666; }
-        .score { font-size: 18px; font-weight: bold; color: #f26522; }
+        /* 카드 디자인 */
+        .card { background: white; padding: 15px; margin-bottom: 12px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .info h3 { margin: 0; font-size: 16px; color: #333; }
+        .info p { margin: 5px 0 0; font-size: 13px; color: #666; }
+        .score { font-size: 20px; font-weight: bold; color: #f26522; }
 
-        /* 팝업(모달) 스타일 */
-        #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 999; }
-        .modal-content { background: white; width: 80%; max-width: 400px; padding: 20px; border-radius: 10px; position: relative; }
-        .close { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; }
+        /* 상태 메시지 */
+        #status-msg { text-align: center; margin-top: 20px; font-size: 14px; color: #666; }
+        
+        /* 팝업(모달) */
+        #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; }
+        .modal-box { background: white; width: 85%; max-width: 400px; padding: 20px; border-radius: 12px; position: relative; }
+        .close-btn { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; color: #aaa; }
     </style>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" onerror="console.log('차트 로딩 실패')"></script>
 </head>
 <body>
 
     <div class="header">
-        <h3>WM혁신팀 성과 관리</h3>
+        <h3 style="margin:0;">WM혁신팀 성과관리</h3>
     </div>
 
-    <div class="container" id="list-area">
-        <p style="text-align:center; color:#666;">데이터 로딩 중...</p>
+    <div class="container">
+        <div id="list-area"></div>
+        
+        <div id="status-msg">시스템 준비 중...</div>
     </div>
 
     <div id="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal()">&times;</span>
-            <h2 id="m-name">이름</h2>
+        <div class="modal-box">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <h2 id="m-name" style="margin-top:0;">이름</h2>
             <p id="m-role">직책</p>
-            <div style="height: 250px;">
+            <div style="height:250px; position:relative;">
                 <canvas id="myChart"></canvas>
+                <div id="chart-error" style="display:none; text-align:center; padding-top:100px; color:red;">
+                    보안망 차단으로<br>차트를 불러올 수 없습니다.
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // 1. 데이터 정의 (이 부분을 수정해서 사용하세요)
+        // ==============================================
+        // 1. 데이터 입력 (이 부분만 수정하세요)
+        // ==============================================
         var staffData = [
-            { name: "김미래", role: "선임PB (관리자)", kpi: "125%", scores: },
-            { name: "이증권", role: "WM디지털PB", kpi: "95%", scores: },
-            { name: "박혁신", role: "수석PB", kpi: "105%", scores: },
-            { name: "최자산", role: "WM디지털PB", kpi: "88%", scores: }
+            { name: "김미래", role: "선임PB (관리자)", kpi: "125%", history: },
+            { name: "이증권", role: "WM디지털PB", kpi: "95%", history: },
+            { name: "박혁신", role: "수석PB", kpi: "105%", history: },
+            { name: "최자산", role: "WM디지털PB", kpi: "88%", history: }
         ];
+        // ==============================================
 
-        // 2. 목록 그리기 함수
-        function drawList() {
-            var area = document.getElementById('list-area');
-            var html = '';
+        // 안전 장치: 페이지가 다 열리면 실행
+        window.onload = function() {
+            try {
+                var listArea = document.getElementById('list-area');
+                var statusMsg = document.getElementById('status-msg');
+                var html = '';
 
-            for (var i = 0; i < staffData.length; i++) {
-                var s = staffData[i];
-                // onclick에 직접 인덱스를 전달하도록 수정 (가장 안전한 방법)
-                html += '<div class="card" onclick="openModal(' + i + ')">' +
-                        '<div class="info"><h3>' + s.name + '</h3><p>' + s.role + '</p></div>' +
-                        '<div class="score">' + s.kpi + '</div>' +
-                        '</div>';
+                // 리스트 HTML 만들기
+                for (var i = 0; i < staffData.length; i++) {
+                    var s = staffData[i];
+                    html += '<div class="card" onclick="openModal(' + i + ')">' +
+                            '<div class="info"><h3>' + s.name + '</h3><p>' + s.role + '</p></div>' +
+                            '<div class="score">' + s.kpi + '</div>' +
+                            '</div>';
+                }
+
+                // 화면에 뿌리기
+                listArea.innerHTML = html;
+                
+                // 성공하면 '준비 중' 메시지 삭제
+                statusMsg.style.display = 'none';
+
+            } catch (err) {
+                // 에러 발생 시 화면에 표시
+                document.getElementById('status-msg').innerHTML = 
+                    "<span style='color:red;'>오류 발생: " + err.message + "</span>";
             }
-            area.innerHTML = html;
-        }
+        };
 
-        // 3. 팝업 열기 함수
-        var myChartObj = null; // 차트 담을 변수
+        // 팝업 열기 함수
+        var myChart = null;
 
-        function openModal(index) {
-            var s = staffData[index];
+        function openModal(idx) {
+            var s = staffData[idx];
             document.getElementById('modal').style.display = 'flex';
             document.getElementById('m-name').innerText = s.name;
             document.getElementById('m-role').innerText = s.role;
 
-            // 차트 그리기
-            var ctx = document.getElementById('myChart');
-            
-            // 기존 차트 있으면 삭제 (안그러면 겹침)
-            if (myChartObj) { myChartObj.destroy(); }
-
+            // 차트 그리기 시도
             try {
-                myChartObj = new Chart(ctx, {
+                if (typeof Chart === 'undefined') {
+                    throw new Error("Chart 라이브러리 없음");
+                }
+                
+                var ctx = document.getElementById('myChart');
+                if (myChart) myChart.destroy(); // 기존 차트 삭제
+
+                myChart = new Chart(ctx, {
                     type: 'line',
                     data: {
                         labels: ['1Q', '2Q', '3Q', '4Q'],
                         datasets: [{
                             label: '성과 추이',
-                            data: s.scores,
+                            data: s.history,
                             borderColor: '#f26522',
                             backgroundColor: 'rgba(242, 101, 34, 0.1)',
                             fill: true
@@ -102,19 +126,14 @@
                     options: { responsive: true, maintainAspectRatio: false }
                 });
             } catch (e) {
-                console.log("차트 로딩 실패: 사내망 보안 문제일 수 있음");
-                ctx.style.display = 'none'; // 차트 영역 숨김
+                // 차트가 안 그려지면 에러 메시지 표시
+                document.getElementById('chart-error').style.display = 'block';
             }
         }
 
-        // 4. 팝업 닫기 함수
         function closeModal() {
             document.getElementById('modal').style.display = 'none';
         }
-
-        // [중요] 페이지 로드 즉시 실행
-        drawList();
-
     </script>
 </body>
 </html>
