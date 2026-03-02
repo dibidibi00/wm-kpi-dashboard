@@ -2,195 +2,366 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WM혁신팀 성과관리</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WM 성과관리 시스템</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* 1. 기본 설정 */
-        :root { --mir-blue: #002d72; --mir-orange: #f26522; --bg-gray: #f4f6f8; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Pretendard", sans-serif; margin: 0; display: flex; height: 100vh; background-color: var(--bg-gray); color: #333; overflow: hidden; }
-
-        /* 2. 레이아웃 (좌측 사이드바 + 우측 메인) */
-        .sidebar { width: 300px; background: white; border-right: 1px solid #ddd; display: flex; flex-direction: column; overflow-y: auto; }
-        .main-content { flex: 1; padding: 30px; overflow-y: auto; display: flex; flex-direction: column; }
-
-        /* 3. 사이드바 디자인 */
-        .brand { padding: 20px; background: var(--mir-blue); color: white; font-weight: bold; font-size: 18px; text-align: center; }
-        .menu-list { list-style: none; padding: 0; margin: 0; }
-        .menu-item { padding: 15px 20px; border-bottom: 1px solid #eee; cursor: pointer; transition: 0.2s; display: flex; justify-content: space-between; }
-        .menu-item:hover { background-color: #f0f4ff; }
-        .menu-item.active { background-color: #e6f0ff; border-left: 5px solid var(--mir-blue); }
-        .menu-name { font-weight: bold; font-size: 15px; }
-        .menu-role { font-size: 12px; color: #666; margin-top: 4px; }
-        .menu-score { font-weight: bold; color: var(--mir-orange); }
-
-        /* 4. 메인 컨텐츠 디자인 */
-        .header-area { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #ddd; display: flex; justify-content: space-between; align-items: end; }
-        .staff-name { font-size: 28px; font-weight: bold; color: var(--mir-blue); margin: 0; }
-        .staff-role { font-size: 16px; color: #555; margin-bottom: 5px; }
+        /* [스타일 정의] 미래에셋 아이덴티티 반영 */
+        :root { --mir-blue: #002d72; --mir-orange: #f26522; --bg: #f4f6f8; --white: #ffffff; }
+        body { font-family: 'Pretendard', -apple-system, sans-serif; margin: 0; background-color: var(--bg); color: #333; height: 100vh; overflow: hidden; }
         
-        .card-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 30px; }
-        .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: center; }
-        .stat-label { font-size: 13px; color: #666; margin-bottom: 5px; }
-        .stat-value { font-size: 24px; font-weight: bold; color: #333; }
+        /* 1. 로그인 화면 */
+        #login-page { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: var(--mir-blue); color: white; position: fixed; width: 100%; z-index: 9999; }
+        .login-box { background: white; padding: 40px; border-radius: 12px; width: 80%; max-width: 350px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .login-input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
+        .login-btn { width: 100%; padding: 12px; background: var(--mir-orange); color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        
+        /* 2. 메인 레이아웃 */
+        #main-app { display: none; height: 100%; display: flex; flex-direction: column; } /* 초기엔 숨김 */
+        .app-header { background: var(--mir-blue); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .logout-btn { font-size: 12px; border: 1px solid rgba(255,255,255,0.5); padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        
+        .container { display: flex; flex: 1; overflow: hidden; }
+        
+        /* 좌측 사이드바 (리스트) */
+        .sidebar { width: 320px; background: white; border-right: 1px solid #ddd; display: flex; flex-direction: column; }
+        .tab-menu { display: flex; border-bottom: 1px solid #ddd; }
+        .tab { flex: 1; padding: 15px; text-align: center; cursor: pointer; background: #f9f9f9; font-weight: bold; color: #666; }
+        .tab.active { background: white; color: var(--mir-blue); border-bottom: 2px solid var(--mir-blue); }
+        
+        .list-wrap { flex: 1; overflow-y: auto; }
+        .list-item { padding: 15px 20px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .list-item:hover { background: #f0f4ff; }
+        .list-item.selected { background: #e6f0ff; border-left: 4px solid var(--mir-blue); }
 
-        .chart-box { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); height: 400px; position: relative; }
+        /* 우측 메인 콘텐츠 */
+        .content { flex: 1; padding: 30px; overflow-y: auto; background: var(--bg); }
+        
+        /* 카드 디자인 */
+        .kpi-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .card-header { font-size: 14px; color: #666; margin-bottom: 5px; }
+        .card-value { font-size: 24px; font-weight: bold; color: #333; }
+        
+        /* 프로그레스 바 (위치 파악용) */
+        .progress-bg { background: #eee; height: 8px; border-radius: 4px; margin-top: 10px; overflow: hidden; }
+        .progress-bar { height: 100%; background: var(--mir-orange); border-radius: 4px; width: 0%; transition: width 1s ease-in-out; }
+        .rank-text { font-size: 12px; color: #888; text-align: right; margin-top: 4px; }
 
-        /* 5. 모바일 반응형 (화면 작을 때) */
+        /* 3. 모바일 반응형 처리 */
         @media (max-width: 768px) {
-            body { flex-direction: column; height: auto; overflow: auto; }
-            .sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid #ddd; }
-            .menu-item { padding: 10px 15px; }
-            .main-content { padding: 15px; height: auto; }
-            .chart-box { height: 300px; }
+            .container { flex-direction: column; }
+            .sidebar { width: 100%; height: 100%; display: flex; } /* 기본 표시 */
+            .content { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; padding: 20px; box-sizing: border-box; }
+            .content.show { display: block; }
+            
+            /* 모바일에서 뒤로가기 버튼 */
+            .back-btn { display: inline-block; margin-bottom: 15px; color: var(--mir-blue); font-weight: bold; cursor: pointer; }
+        }
+        @media (min-width: 769px) {
+            .back-btn { display: none; }
+            #main-app { display: none; } /* JS로 제어 */
         }
     </style>
 </head>
 <body>
 
-    <div class="sidebar">
-        <div class="brand">미래에셋 WM혁신팀</div>
-        <ul class="menu-list" id="sidebar-list">
-            </ul>
+    <div id="login-page">
+        <h2 style="margin-bottom:10px;">WM 성과관리 시스템</h2>
+        <p style="margin-top:0; font-size:14px; opacity:0.8;">미래에셋증권 WM혁신팀</p>
+        <div class="login-box">
+            <input type="text" id="login-id" class="login-input" placeholder="사번 (예: 123456)">
+            <input type="password" id="login-birth" class="login-input" placeholder="생년월일 6자리 (예: 800101)">
+            <button class="login-btn" onclick="tryLogin()">로그인</button>
+            <p style="font-size:12px; color:red; margin-top:10px; display:none;" id="login-error">정보를 확인해주세요.</p>
+        </div>
+        <p style="font-size:12px; opacity:0.6; margin-top:20px;">* 테스트용: 사번 1111 / 생년 800101 (강남지점장)</p>
     </div>
 
-    <div class="main-content">
-        <div class="header-area">
-            <div>
-                <p class="staff-role" id="view-role">-</p>
-                <h1 class="staff-name" id="view-name">직원을 선택하세요</h1>
-            </div>
-            <div style="text-align: right;">
-                <span style="font-size:12px; color:#888;">현재 달성률</span><br>
-                <span id="view-kpi" style="font-size:24px; font-weight:bold; color:#f26522;">-</span>
-            </div>
+    <div id="main-app">
+        <div class="app-header">
+            <div><span id="user-info-disp" style="font-weight:bold;">-</span> 님 (지점장)</div>
+            <div class="logout-btn" onclick="logout()">로그아웃</div>
         </div>
 
-        <div class="card-container">
-            <div class="stat-card">
-                <div class="stat-label">관리자산(AUM)</div>
-                <div class="stat-value" id="view-asset">-</div>
+        <div class="container">
+            <div class="sidebar">
+                <div class="tab-menu">
+                    <div class="tab active" onclick="switchTab('team')">우리 지점 현황</div>
+                    <div class="tab" onclick="switchTab('staff')">직원 목록</div>
+                </div>
+                <div class="list-wrap" id="list-area">
+                    </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">디지털 접촉수</div>
-                <div class="stat-value" id="view-contact">-</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">성과급 예상</div>
-                <div class="stat-value" id="view-bonus">-</div>
-            </div>
-        </div>
 
-        <div class="chart-box">
-            <canvas id="mainChart"></canvas>
+            <div class="content" id="detail-view">
+                <div class="back-btn" onclick="closeDetail()">← 목록으로</div>
+                
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h2 id="view-title" style="margin:0;">지점 전체 요약</h2>
+                    <select id="quarter-select" style="padding:5px;" onchange="updateDetail()">
+                        <option value="q1">1분기</option>
+                        <option value="q2">2분기</option>
+                        <option value="q3">3분기</option>
+                        <option value="q4">4분기</option>
+                    </select>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="card-header">관리자산 (AUM)</div>
+                    <div class="card-value" id="val-asset">-</div>
+                    <div class="progress-bg"><div class="progress-bar" id="bar-asset"></div></div>
+                    <div class="rank-text" id="rank-asset">목표 대비 -%</div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="card-header">총 수익 (Revenue)</div>
+                    <div class="card-value" id="val-rev">-</div>
+                    <div class="progress-bg"><div class="progress-bar" id="bar-rev"></div></div>
+                    <div class="rank-text" id="rank-rev">전사 상위 -%</div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="card-header">컨설팅 수익 (Consulting)</div>
+                    <div class="card-value" id="val-con">-</div>
+                    <div class="progress-bg"><div class="progress-bar" id="bar-con"></div></div>
+                    <div class="rank-text" id="rank-con">지점 내 -위</div>
+                </div>
+                
+                <div style="text-align:center; margin-top:30px;">
+                    <canvas id="trendChart" style="max-height:200px;"></canvas>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
         // ==========================================
-        // [DB] 데이터 관리 (이 부분을 수정하세요)
+        // [DB 영역] 여기에 실제 데이터를 넣습니다.
         // ==========================================
-        const staffData = [
-            { 
-                id: 0, name: "김미래", role: "선임PB (관리자)", kpi: "125%", 
-                asset: "3,200억", contact: "152건", bonus: "A등급",
-                history: 
+        
+        // 1. 조직장(사용자) 정보 DB
+        const usersDB = [
+            { id: "1111", birth: "800101", name: "김지점장", orgCode: "KANGNAM", orgName: "강남WM" },
+            { id: "2222", birth: "820505", name: "이센터장", orgCode: "YEOUIDO", orgName: "여의도WM" }
+        ];
+
+        // 2. 직원 성과 데이터 DB (orgCode로 매핑)
+        const staffDB = [
+            // 강남WM 소속 직원들
+            { id: 1, name: "박수석", role: "수석PB", orgCode: "KANGNAM", 
+              data: { 
+                  q1: { asset: 3000, rev: 5.2, consult: 1.5 },
+                  q2: { asset: 3200, rev: 5.8, consult: 1.8 } 
+              } 
             },
-            { 
-                id: 1, name: "이증권", role: "WM디지털PB", kpi: "95%", 
-                asset: "850억", contact: "840건", bonus: "B등급",
-                history: 
+            { id: 2, name: "최선임", role: "선임PB", orgCode: "KANGNAM", 
+              data: { 
+                  q1: { asset: 1500, rev: 3.0, consult: 0.8 },
+                  q2: { asset: 1600, rev: 3.5, consult: 1.2 } 
+              } 
             },
-            { 
-                id: 2, name: "박혁신", role: "수석PB", kpi: "105%", 
-                asset: "2,100억", contact: "95건", bonus: "B+등급",
-                history: 
+            { id: 3, name: "정디지털", role: "WM디지털PB", orgCode: "KANGNAM", 
+              data: { 
+                  q1: { asset: 800, rev: 1.2, consult: 0.2 },
+                  q2: { asset: 850, rev: 1.5, consult: 0.3 } 
+              } 
             },
-            { 
-                id: 3, name: "최자산", role: "WM디지털PB", kpi: "88%", 
-                asset: "600억", contact: "1,200건", bonus: "C등급",
-                history: 
+            // 여의도WM 소속
+            { id: 4, name: "오PB", role: "책임PB", orgCode: "YEOUIDO", 
+              data: { q1: { asset: 2000, rev: 4.0, consult: 1.0 } } 
             }
         ];
 
-        let myChart = null;
+        // 목표치 (백분율 계산용 기준값)
+        const TARGETS = { asset: 4000, rev: 6.0, consult: 2.0 };
 
-        // 1. 초기 실행
-        window.onload = function() {
-            renderSidebar();
-            selectStaff(0); // 첫 번째 직원 자동 선택
-        };
+        // ==========================================
+        // [로직 영역]
+        // ==========================================
 
-        // 2. 사이드바 그리기
-        function renderSidebar() {
-            const list = document.getElementById('sidebar-list');
-            let html = '';
-            staffData.forEach((s, index) => {
-                html += `
-                    <li class="menu-item" onclick="selectStaff(${index})" id="menu-${index}">
-                        <div>
-                            <div class="menu-name">${s.name}</div>
-                            <div class="menu-role">${s.role}</div>
-                        </div>
-                        <div class="menu-score">${s.kpi}</div>
-                    </li>
-                `;
-            });
-            list.innerHTML = html;
-        }
+        let currentUser = null; // 로그인한 사람 정보
+        let currentView = 'team'; // team 또는 staff
+        let selectedStaffId = null; // 선택된 직원 ID
 
-        // 3. 직원 선택 시 상세정보 보여주기
-        function selectStaff(index) {
-            const s = staffData[index];
+        // 1. 로그인 함수
+        function tryLogin() {
+            const inputId = document.getElementById('login-id').value;
+            const inputBirth = document.getElementById('login-birth').value;
 
-            // (1) 텍스트 데이터 업데이트
-            document.getElementById('view-name').innerText = s.name;
-            document.getElementById('view-role').innerText = s.role;
-            document.getElementById('view-kpi').innerText = s.kpi;
-            document.getElementById('view-asset').innerText = s.asset;
-            document.getElementById('view-contact').innerText = s.contact;
-            document.getElementById('view-bonus').innerText = s.bonus;
+            // DB에서 일치하는 사람 찾기
+            const user = usersDB.find(u => u.id === inputId && u.birth === inputBirth);
 
-            // (2) 메뉴 활성화 표시 (색상 변경)
-            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
-            document.getElementById(`menu-${index}`).classList.add('active');
-
-            // (3) 차트 그리기
-            drawChart(s.history);
-        }
-
-        // 4. 차트 그리기 함수
-        function drawChart(data) {
-            const ctx = document.getElementById('mainChart');
-            
-            if (myChart) { myChart.destroy(); } // 기존 차트 삭제
-
-            try {
-                myChart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: ['1Q', '2Q', '3Q', '4Q'],
-                        datasets: [{
-                            label: '성과 추이 (%)',
-                            data: data,
-                            borderColor: '#f26522',
-                            backgroundColor: 'rgba(242, 101, 34, 0.1)',
-                            borderWidth: 2,
-                            fill: true,
-                            tension: 0.4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: { y: { beginAtZero: false, min: 50, max: 150 } }
-                    }
-                });
-            } catch (e) {
-                console.log("차트 로딩 실패");
+            if (user) {
+                currentUser = user;
+                document.getElementById('login-page').style.display = 'none';
+                document.getElementById('main-app').style.display = 'flex';
+                document.getElementById('user-info-disp').innerText = user.name + " (" + user.orgName + ")";
+                
+                // 초기 화면 로드
+                switchTab('team');
+            } else {
+                document.getElementById('login-error').style.display = 'block';
             }
         }
+
+        // 2. 로그아웃
+        function logout() {
+            location.reload();
+        }
+
+        // 3. 탭 전환 (지점현황 vs 직원목록)
+        function switchTab(tabName) {
+            currentView = tabName;
+            
+            // 탭 스타일 변경
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab')[tabName === 'team' ? 0 : 1].classList.add('active');
+
+            renderList();
+        }
+
+        // 4. 리스트 렌더링
+        function renderList() {
+            const listArea = document.getElementById('list-area');
+            listArea.innerHTML = '';
+
+            if (currentView === 'team') {
+                // 지점 전체 보기 버튼 하나만 생성
+                const div = document.createElement('div');
+                div.className = 'list-item selected';
+                div.innerHTML = `
+                    <div>
+                        <div style="font-weight:bold;">${currentUser.orgName} 전체</div>
+                        <div style="font-size:12px; color:#666;">지점 합산 성과 조회</div>
+                    </div>
+                    <div style="color:var(--mir-blue); font-weight:bold;">></div>
+                `;
+                div.onclick = () => showDetail('TEAM');
+                listArea.appendChild(div);
+                
+                // 모바일이 아니면 바로 상세내용 보여줌
+                if(window.innerWidth > 768) showDetail('TEAM');
+
+            } else {
+                // 직원 목록 생성 (내 지점 직원만 필터링)
+                const myStaffs = staffDB.filter(s => s.orgCode === currentUser.orgCode);
+                
+                myStaffs.forEach(s => {
+                    const div = document.createElement('div');
+                    div.className = 'list-item';
+                    div.innerHTML = `
+                        <div>
+                            <div style="font-weight:bold;">${s.name}</div>
+                            <div style="font-size:12px; color:#666;">${s.role}</div>
+                        </div>
+                        <div style="font-size:14px; color:#888;">상세보기 ></div>
+                    `;
+                    div.onclick = () => {
+                        // 선택 스타일 처리
+                        document.querySelectorAll('.list-item').forEach(el => el.classList.remove('selected'));
+                        div.classList.add('selected');
+                        showDetail(s.id);
+                    };
+                    listArea.appendChild(div);
+                });
+            }
+        }
+
+        // 5. 상세 화면 데이터 표시
+        function showDetail(id) {
+            selectedStaffId = id;
+            
+            // 모바일용 화면 전환
+            if(window.innerWidth <= 768) {
+                document.getElementById('detail-view').classList.add('show');
+            }
+
+            updateDetail();
+        }
+
+        // 6. 데이터 업데이트 로직 (핵심)
+        function updateDetail() {
+            if (!currentUser) return;
+
+            const quarter = document.getElementById('quarter-select').value;
+            let data = { asset: 0, rev: 0, consult: 0 };
+            let title = "";
+
+            if (selectedStaffId === 'TEAM') {
+                // 지점 전체 합산 로직
+                title = currentUser.orgName + " 전체 요약";
+                const myStaffs = staffDB.filter(s => s.orgCode === currentUser.orgCode);
+                
+                myStaffs.forEach(s => {
+                    if (s.data[quarter]) {
+                        data.asset += s.data[quarter].asset;
+                        data.rev += s.data[quarter].rev;
+                        data.consult += s.data[quarter].consult;
+                    }
+                });
+            } else {
+                // 개별 직원 로직
+                const staff = staffDB.find(s => s.id === selectedStaffId);
+                if (staff) {
+                    title = staff.name + " " + staff.role;
+                    if (staff.data[quarter]) {
+                        data = staff.data[quarter];
+                    }
+                }
+            }
+
+            // 화면에 뿌리기
+            document.getElementById('view-title').innerText = title;
+
+            // 숫자 포맷팅 (콤마)
+            document.getElementById('val-asset').innerText = data.asset.toLocaleString() + " 억";
+            document.getElementById('val-rev').innerText = data.rev.toFixed(1) + " 억";
+            document.getElementById('val-con').innerText = data.consult.toFixed(1) + " 억";
+
+            // 백분율 바 계산 (목표치 대비)
+            setProgressBar('bar-asset', 'rank-asset', data.asset, TARGETS.asset);
+            setProgressBar('bar-rev', 'rank-rev', data.rev, TARGETS.rev);
+            setProgressBar('bar-con', 'rank-con', data.consult, TARGETS.consult);
+            
+            // 차트 그리기 (생략 또는 간단 예시)
+            drawChart([data.asset, data.asset * 1.1, data.asset * 0.9, data.asset * 1.2]); // 예시 데이터
+        }
+
+        function setProgressBar(barId, textId, value, target) {
+            let percent = (value / target) * 100;
+            if(percent > 100) percent = 100;
+            
+            document.getElementById(barId).style.width = percent + "%";
+            
+            // 색상 변경 (성과 좋으면 오렌지, 낮으면 회색)
+            document.getElementById(barId).style.backgroundColor = percent > 80 ? 'var(--mir-orange)' : '#ccc';
+            document.getElementById(textId).innerText = "목표 달성률 " + percent.toFixed(0) + "%";
+        }
+
+        function closeDetail() {
+            document.getElementById('detail-view').classList.remove('show');
+        }
+
+        // 간단 차트
+        let myChart = null;
+        function drawChart(dataArr) {
+            const ctx = document.getElementById('trendChart');
+            if(myChart) myChart.destroy();
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['1Q', '2Q', '3Q', '4Q'],
+                    datasets: [{
+                        label: '자산 추이',
+                        data: dataArr,
+                        borderColor: '#002d72',
+                        tension: 0.3
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
     </script>
 </body>
 </html>
